@@ -103,6 +103,8 @@ has no record of it.
     backend-net   database (172.20.0.3/16)  backend (172.20.0.2/16)
     database-net  database (172.21.0.2/16)
 
+![Three containers on three networks](screenshots/container-networking.png)
+
 ### What I understood
 
 The default bridge network lets every container talk to every other one, which is fine
@@ -322,6 +324,8 @@ Afterwards I put my machine back how it was:
 
     $ docker swarm leave --force
     Node left the swarm.
+
+![Overlay network on a swarm](screenshots/overlay-network.png)
 
 ### How it works across multiple hosts
 

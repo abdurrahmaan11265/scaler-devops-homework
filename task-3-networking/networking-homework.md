@@ -18,6 +18,8 @@ bridge 172.17.0.1 acts as its gateway. That is why the addresses below are all i
 
 ## Part 1: Looking at addresses and interfaces
 
+![ip addr and ip link](screenshots/01-ip-addr-link.png)
+
 ### ip addr show
 
 Shows every network interface and the IP addresses assigned to it. This is the first
@@ -83,6 +85,8 @@ the IP addresses. The -I version is handy in scripts because there is nothing to
 
 ## Part 2: Routing
 
+![ip route and ip neigh](screenshots/02-ip-route-neigh.png)
+
 ### ip route
 
 Shows the routing table, which is the list of rules the kernel uses to decide where to
@@ -137,6 +141,8 @@ reach each other.
 
 ## Part 3: Changing addresses and links
 
+![changing addresses and routes](screenshots/05-ip-modify.png)
+
 ### ip addr add and ip addr del
 
     $ ip addr add 10.10.10.5/24 dev eth0
@@ -162,6 +168,8 @@ eth0 up to bring it back. Running down on a remote server over SSH would cut you
 connection, so it is not something to try casually.
 
 ## Part 4: Testing connectivity
+
+![ping and DNS lookups](screenshots/03-ping-dns.png)
 
 ### ping
 
@@ -275,6 +283,8 @@ What I understood: anything listed here wins over DNS, which is useful for testi
 domain against a specific server before changing the real DNS records.
 
 ## Part 6: Ports and connections
+
+![ss, netstat, curl and wget](screenshots/04-ports-http.png)
 
 ### ss -tulpn
 
