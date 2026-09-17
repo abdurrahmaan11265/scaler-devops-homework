@@ -1,0 +1,15 @@
+# Deliberately broken: the selector says component=katalog, but the pods are
+# labelled component=catalog. The service is created fine and looks healthy,
+# it just matches no pods, so it has no endpoints and every request times out.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-api-typo
+spec:
+  type: ClusterIP
+  selector:
+    app: library
+    component: katalog
+  ports:
+    - port: 8080
+      targetPort: 80

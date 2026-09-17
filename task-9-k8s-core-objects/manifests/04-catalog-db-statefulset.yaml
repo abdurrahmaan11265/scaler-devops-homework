@@ -1,0 +1,56 @@
+# A statefulset gives each pod a stable name and its own storage.
+# The pods are catalog-db-0, catalog-db-1 and they keep those names
+# across restarts, which a deployment's random pod names never do.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-db          # the governing service, needed by the statefulset
+  labels:
+    app: library
+    component: db
+spec:
+  clusterIP: None           # headless, no load balancing, DNS per pod
+  selector:
+    app: library
+    component: db
+  ports:
+    - port: 5432
+      name: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: catalog-db
+spec:
+  serviceName: catalog-db
+  replicas: 2
+  selector:
+    matchLabels:
+      app: library
+      component: db
+  template:
+    metadata:
+      labels:
+        app: library
+        component: db
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: db
+          image: busybox:1.36
+          command: ["sh", "-c", "echo $(hostname) ready; sleep 3600"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/catalog
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 64Mi

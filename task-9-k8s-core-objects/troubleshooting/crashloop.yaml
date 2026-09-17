@@ -1,0 +1,14 @@
+# Deliberately broken: the container exits with an error straight away,
+# so Kubernetes restarts it, it fails again, and the backoff grows.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: broken-importer
+  labels:
+    app: library
+    component: importer
+spec:
+  containers:
+    - name: importer
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'importer: cannot reach catalog-db'; exit 1"]

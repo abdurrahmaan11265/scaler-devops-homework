@@ -1,0 +1,23 @@
+# The smallest thing Kubernetes will run for you: a single pod.
+# Nothing is watching it, so if it dies it stays dead. That is the
+# whole reason deployments exist, which is the next task.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: library-web
+  labels:
+    app: library
+    tier: web
+spec:
+  containers:
+    - name: web
+      image: nginx:1.27-alpine
+      ports:
+        - containerPort: 80
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi

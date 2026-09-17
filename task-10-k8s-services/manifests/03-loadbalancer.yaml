@@ -1,0 +1,19 @@
+# LoadBalancer asks the cloud provider for a real external load balancer.
+# On a laptop there is no cloud provider, so the external IP stays Pending
+# until minikube tunnel pretends to be one.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-api-lb
+  labels:
+    app: library
+    component: catalog
+spec:
+  type: LoadBalancer
+  selector:
+    app: library
+    component: catalog
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 80

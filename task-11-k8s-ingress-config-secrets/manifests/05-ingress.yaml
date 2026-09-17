@@ -1,0 +1,30 @@
+# One entry point, two backends, routed by path.
+# Without an ingress each service would need its own NodePort or LoadBalancer.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: library-ingress
+  annotations:
+    # strip the matched path prefix before passing the request on,
+    # so /catalog/ arrives at the backend as /
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: library.local
+      http:
+        paths:
+          - path: /catalog(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: catalog-web
+                port:
+                  number: 80
+          - path: /lending(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: lending-web
+                port:
+                  number: 80

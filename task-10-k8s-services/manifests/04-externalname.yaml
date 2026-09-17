@@ -1,0 +1,10 @@
+# ExternalName has no selector, no pods and no cluster IP. It is a CNAME:
+# code inside the cluster can use one name and the service points it somewhere
+# outside. Handy for a managed database that lives outside Kubernetes.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-search
+spec:
+  type: ExternalName
+  externalName: www.google.com

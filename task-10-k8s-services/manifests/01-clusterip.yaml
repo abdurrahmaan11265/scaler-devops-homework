@@ -1,0 +1,18 @@
+# ClusterIP is the default. It gives the pods one stable virtual IP and a
+# DNS name inside the cluster. Nothing outside the cluster can reach it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-api
+  labels:
+    app: library
+    component: catalog
+spec:
+  type: ClusterIP
+  selector:                 # this is what picks the pods, not the service name
+    app: library
+    component: catalog
+  ports:
+    - name: http
+      port: 8080            # the port the service listens on
+      targetPort: 80        # the port the container listens on

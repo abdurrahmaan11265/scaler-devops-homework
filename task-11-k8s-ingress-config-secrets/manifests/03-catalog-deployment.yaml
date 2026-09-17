@@ -1,0 +1,63 @@
+# The catalog service, wired to both the configmap and the secret.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-web
+  labels:
+    app: library
+    component: catalog-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: library
+      component: catalog-web
+  template:
+    metadata:
+      labels:
+        app: library
+        component: catalog-web
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          env:
+            # one key at a time, so the variable can be renamed
+            - name: LIBRARY_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: catalog-settings
+                  key: LIBRARY_NAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: catalog-db-auth
+                  key: DB_PASSWORD
+          envFrom:
+            # or every key at once, keeping the same names
+            - configMapRef:
+                name: catalog-settings
+          volumeMounts:
+            - name: page
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: page
+          configMap:
+            name: catalog-settings
+            items:
+              - key: index.html          # only this key, not the whole configmap
+                path: index.html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-web
+spec:
+  selector:
+    app: library
+    component: catalog-web
+  ports:
+    - port: 80
+      targetPort: 80

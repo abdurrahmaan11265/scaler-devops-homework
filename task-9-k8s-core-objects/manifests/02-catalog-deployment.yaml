@@ -1,0 +1,42 @@
+# The same three pods, but managed by a deployment so that changing the
+# image rolls the pods over instead of replacing them all at once.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-api
+  labels:
+    app: library
+    component: catalog
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1     # at most one pod down at a time
+      maxSurge: 1           # at most one extra pod during the roll
+  selector:
+    matchLabels:
+      app: library
+      component: catalog
+  template:
+    metadata:
+      labels:
+        app: library
+        component: catalog
+    spec:
+      containers:
+        - name: catalog
+          image: nginx:1.27.3-alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 24Mi

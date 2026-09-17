@@ -1,0 +1,23 @@
+# A configmap holds non secret configuration. Two shapes are useful:
+# short key/value pairs that become environment variables, and whole
+# file contents that get mounted into the container as real files.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog-settings
+data:
+  # plain values, used as environment variables
+  LIBRARY_NAME: "Campus Central Library"
+  PAGE_SIZE: "25"
+  LOAN_DAYS: "14"
+
+  # a whole file, mounted as /usr/share/nginx/html/index.html
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+      <head><title>Catalog service</title></head>
+      <body style="font-family: sans-serif; text-align: center; margin-top: 12vh;">
+        <h1>Catalog service</h1>
+        <p>This page came from a ConfigMap, not from the image.</p>
+      </body>
+    </html>

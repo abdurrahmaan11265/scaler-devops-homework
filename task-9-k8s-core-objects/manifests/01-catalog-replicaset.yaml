@@ -1,0 +1,31 @@
+# A replicaset keeps a fixed number of identical pods alive.
+# You rarely write one by hand, a deployment creates one for you,
+# but writing one makes it obvious what a deployment is doing underneath.
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: catalog-rs
+  labels:
+    app: library
+    component: catalog
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: library
+      component: catalog
+  template:
+    metadata:
+      labels:
+        app: library
+        component: catalog
+    spec:
+      containers:
+        - name: catalog
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 25m
+              memory: 24Mi

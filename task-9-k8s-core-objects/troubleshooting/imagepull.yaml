@@ -1,0 +1,13 @@
+# Deliberately broken: this tag does not exist, so the kubelet can never
+# pull the image and the pod never starts.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: broken-reports
+  labels:
+    app: library
+    component: reports
+spec:
+  containers:
+    - name: reports
+      image: nginx:1.27-does-not-exist
