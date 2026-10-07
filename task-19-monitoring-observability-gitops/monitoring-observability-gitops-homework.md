@@ -57,8 +57,9 @@ be searched across all pods rather than one at a time.
 
 Three rules in monitoring/alert-rules.yaml: CPU above 80 percent of the request for
 a minute, fewer than two replicas available for two minutes, memory above 90 percent
-of the limit. With the load running, the CPU rule crossed its threshold and after the
-one minute hold went to firing:
+of the limit. With the load running, the CPU rule crossed its threshold, sat in pending for
+the one minute hold, and went to firing. The page capture caught it during the
+hold, the terminal capture further down shows it firing:
 
     $ curl -s http://localhost:9090/api/v1/alerts | ...
     CatalogHighCpu firing
