@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lending-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lending-api
+  template:
+    metadata:
+      labels:
+        app: lending-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: api
+          image: ghcr.io/abdurrahmaan11265/lending-api:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MAX_LOANS
+              value: "3"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lending-api
+spec:
+  selector:
+    app: lending-api
+  ports:
+    - port: 80
+      targetPort: 5000

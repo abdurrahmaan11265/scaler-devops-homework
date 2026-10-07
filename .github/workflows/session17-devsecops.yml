@@ -1,0 +1,149 @@
+# Session 17: the same CI/CD shape as session 16 with security checks between
+# every stage. Any failed scan is a gate: nothing after it runs.
+name: session17-devsecops
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "task-16-devsecops/**"
+      - ".github/workflows/session17-devsecops.yml"
+  workflow_dispatch:
+
+env:
+  APP_DIR: task-16-devsecops
+  IMAGE: ghcr.io/${{ github.repository_owner }}/lending-api
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r $APP_DIR/requirements-dev.txt
+      - run: python -m compileall $APP_DIR/app
+
+  unit-test:
+    name: unit test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r $APP_DIR/requirements-dev.txt
+      - run: cd $APP_DIR && pytest -v
+
+  sast:
+    name: SAST (semgrep)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --config p/python --config p/flask --config $APP_DIR/security/semgrep.yml --error $APP_DIR/app
+
+  sca:
+    name: SCA (pip-audit)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - run: pip-audit -r $APP_DIR/requirements.txt --strict
+
+  secret-scan:
+    name: secret scan (gitleaks)
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: ${{ env.APP_DIR }}/security/gitleaks.toml
+
+  docker-build:
+    name: docker build
+    needs: [sast, sca, secret-scan]      # all three gates must pass first
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build -t $IMAGE:${{ github.sha }} $APP_DIR
+          docker save $IMAGE:${{ github.sha }} -o lending-api.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lending-api-image
+          path: lending-api.tar
+          retention-days: 3
+
+  image-scan:
+    name: container image scan (trivy)
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: lending-api-image
+      - name: scan the image tar, fail on fixable HIGH or CRITICAL
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          input: lending-api.tar
+          trivy-config: ${{ env.APP_DIR }}/security/trivy.yaml
+          format: table
+
+  security-gate:
+    name: security gate
+    needs: image-scan
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "SAST, SCA, secret scan and image scan all passed. Clear to publish."
+
+  push:
+    name: push image
+    needs: security-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lending-api-image
+      - run: docker load -i lending-api.tar
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          docker tag $IMAGE:${{ github.sha }} $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
+
+  deploy:
+    name: deploy to kubernetes
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1
+      - run: |
+          sed "s|image: .*|image: $IMAGE:${{ github.sha }}|" $APP_DIR/k8s/deployment.yaml | kubectl apply -f -
+          kubectl rollout status deployment/lending-api --timeout=180s
+          kubectl port-forward svc/lending-api 8080:80 &
+          sleep 5
+          curl -sf http://localhost:8080/health; echo
+          curl -sf -X POST http://localhost:8080/loans/alice -H 'content-type: application/json' -d '{"book":"Accelerate"}'; echo
+          kubectl get pods -o wide

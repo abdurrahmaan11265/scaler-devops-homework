@@ -1,0 +1,103 @@
+# Session 16: a CI pipeline (test, build, package) and a CD pipeline (push the
+# image, deploy it to a cluster, smoke test it). CD only runs if CI passed.
+name: session16-ci-cd
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "task-15-cicd-github-actions/**"
+      - ".github/workflows/session16-ci-cd.yml"
+  workflow_dispatch:
+
+env:
+  APP_DIR: task-15-cicd-github-actions
+  IMAGE: ghcr.io/${{ github.repository_owner }}/catalog-api
+
+jobs:
+  # ---------------- CI ----------------
+  test:
+    name: unit tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest            # a GitHub hosted runner
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]      # the same job on two runners in parallel
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -v --junitxml=test-report-${{ matrix.python }}.xml
+      - name: keep the test report as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ matrix.python }}
+          path: ${{ env.APP_DIR }}/test-report-${{ matrix.python }}.xml
+
+  build:
+    name: build image
+    needs: test                       # steps run in order, jobs run in order only if told to
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build and save the image as a tar file
+        run: |
+          docker build -t $IMAGE:${{ github.sha }} $APP_DIR
+          docker save $IMAGE:${{ github.sha }} -o catalog-api.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: catalog-api-image
+          path: catalog-api.tar
+          retention-days: 3
+
+  # ---------------- CD ----------------
+  push:
+    name: push image to GHCR
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: catalog-api-image
+      - run: docker load -i catalog-api.tar
+      - name: log in to the registry with the built in token
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}     # a secret GitHub provides automatically
+      - run: |
+          docker tag $IMAGE:${{ github.sha }} $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
+
+  deploy:
+    name: deploy to kubernetes and smoke test
+    needs: push
+    runs-on: ubuntu-latest
+    environment: staging              # the secret below lives on this environment
+    steps:
+      - uses: actions/checkout@v4
+      - name: create a throwaway cluster on the runner
+        uses: helm/kind-action@v1
+      - name: deploy the image that was just pushed
+        run: |
+          sed "s|image: .*|image: $IMAGE:${{ github.sha }}|" $APP_DIR/k8s/deployment.yaml | kubectl apply -f -
+          kubectl rollout status deployment/catalog-api --timeout=180s
+      - name: smoke test through the service
+        env:
+          DEPLOY_API_KEY: ${{ secrets.DEPLOY_API_KEY }}   # a secret I created on the repo
+        run: |
+          echo "api key length: ${#DEPLOY_API_KEY} (the value itself is masked by GitHub)"
+          kubectl port-forward svc/catalog-api 8080:80 &
+          sleep 5
+          curl -sf http://localhost:8080/health
+          curl -sf http://localhost:8080/books | head -c 300; echo
+          kubectl get pods -o wide

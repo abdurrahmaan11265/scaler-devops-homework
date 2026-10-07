@@ -1,0 +1,7 @@
+# Secret scanning config. Extends the default rules; nothing is allowlisted
+# except the test fixtures which contain obviously fake values.
+[extend]
+useDefault = true
+
+[allowlist]
+paths = ['''task-16-devsecops/tests/''']

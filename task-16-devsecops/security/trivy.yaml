@@ -1,0 +1,7 @@
+# Image scan policy: the pipeline fails the gate on anything HIGH or CRITICAL
+# that already has a fix available. Unfixed findings are reported, not blocking.
+severity:
+  - HIGH
+  - CRITICAL
+ignore-unfixed: true
+exit-code: 1
