@@ -97,11 +97,9 @@ jobs:
         with:
           name: lending-api-image
       - name: scan the image tar, fail on fixable HIGH or CRITICAL
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          input: lending-api.tar
-          trivy-config: ${{ env.APP_DIR }}/security/trivy.yaml
-          format: table
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work aquasec/trivy:0.75.0 \
+            image --input lending-api.tar --config $APP_DIR/security/trivy.yaml --format table
 
   security-gate:
     name: security gate
