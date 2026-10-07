@@ -1,0 +1,23 @@
+# Tells Argo CD which repository and path hold the desired state, and to keep
+# the cluster matching it on its own. This file lives outside the app path so
+# it is not treated as one of the workload manifests.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lending-web
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/abdurrahmaan11265/scaler-devops-homework.git
+    targetRevision: main
+    path: task-19-monitoring-observability-gitops/gitops/app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lending
+  syncPolicy:
+    automated:
+      prune: true          # delete things removed from git
+      selfHeal: true       # undo manual changes made in the cluster
+    syncOptions:
+      - CreateNamespace=true
