@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: library-api
+  namespace: library
+  labels: {app: library-api}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: library-api}
+  template:
+    metadata:
+      labels: {app: library-api}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      volumes:
+        - name: books
+          persistentVolumeClaim:
+            claimName: library-books
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: api
+          image: ghcr.io/abdurrahmaan11265/library-api:latest
+          ports: [{containerPort: 5000, name: http}]
+          envFrom:
+            - configMapRef: {name: library-api-config}
+            - secretRef: {name: library-api-secret}
+          volumeMounts:
+            - {name: books, mountPath: /data}
+            - {name: tmp, mountPath: /tmp}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          startupProbe:
+            httpGet: {path: /health, port: http}
+            failureThreshold: 12
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 15
+          resources:
+            requests: {cpu: 100m, memory: 64Mi}
+            limits: {cpu: 300m, memory: 128Mi}

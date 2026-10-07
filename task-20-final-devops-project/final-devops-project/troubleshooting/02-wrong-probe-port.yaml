@@ -1,0 +1,12 @@
+# Break 2: readiness probe on a port nothing listens on.
+# Expect Running but 0/1 ready, empty endpoints, ingress 503. Fix: port http.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: library-api, namespace: library}
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          readinessProbe:
+            httpGet: {path: /ready, port: 8080}

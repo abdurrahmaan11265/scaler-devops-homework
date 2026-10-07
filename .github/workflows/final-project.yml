@@ -1,0 +1,133 @@
+# Session 21 final project: code -> build -> test -> SAST -> SCA -> secret scan
+# -> docker build -> image scan -> security gate -> push -> deploy with Helm.
+name: final-project
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "task-20-final-devops-project/final-devops-project/**"
+      - ".github/workflows/final-project.yml"
+  workflow_dispatch:
+
+env:
+  PROJECT: task-20-final-devops-project/final-devops-project
+  IMAGE: ghcr.io/${{ github.repository_owner }}/library-api
+
+jobs:
+  build-and-test:
+    name: build and unit test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r $PROJECT/application/requirements-dev.txt
+      - run: cd $PROJECT/application && python -m compileall app && pytest -v --junitxml=report.xml
+      - uses: actions/upload-artifact@v4
+        with: {name: test-report, path: task-20-final-devops-project/final-devops-project/application/report.xml}
+
+  sast:
+    name: SAST (semgrep)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --config p/python --config p/flask --config $PROJECT/security/semgrep.yml --error $PROJECT/application/app
+
+  sca:
+    name: SCA (pip-audit)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install pip-audit && pip-audit -r $PROJECT/application/requirements.txt --strict
+
+  secret-scan:
+    name: secret scan (gitleaks)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: ${{ env.PROJECT }}/security/gitleaks.toml
+
+  docker-build:
+    name: docker build
+    needs: [sast, sca, secret-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build -f $PROJECT/docker/Dockerfile -t $IMAGE:${{ github.sha }} $PROJECT
+          docker save $IMAGE:${{ github.sha }} -o library-api.tar
+      - uses: actions/upload-artifact@v4
+        with: {name: library-api-image, path: library-api.tar, retention-days: 3}
+
+  image-scan:
+    name: container image scan (trivy)
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: library-api-image}
+      - run: |
+          docker run --rm -v "$PWD:/work" -w /work aquasec/trivy:0.75.0 \
+            image --input library-api.tar --config $PROJECT/security/trivy.yaml --ignore-unfixed --format table
+
+  security-gate:
+    name: security gate
+    needs: image-scan
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "SAST, SCA, secret scan and image scan passed. Clear to publish."
+
+  push:
+    name: push image
+    needs: security-gate
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: library-api-image}
+      - run: docker load -i library-api.tar
+      - uses: docker/login-action@v3
+        with: {registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - run: |
+          docker tag $IMAGE:${{ github.sha }} $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }} && docker push $IMAGE:latest
+
+  deploy:
+    name: deploy with helm and smoke test
+    needs: push
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1
+      - name: install the chart with the image that was just pushed
+        env:
+          ADMIN_TOKEN: ${{ secrets.DEPLOY_API_KEY }}
+        run: |
+          helm install library-api $PROJECT/helm/library-api -n library --create-namespace \
+            --set image.tag=${{ github.sha }} --set secret.adminToken="$ADMIN_TOKEN" \
+            --set monitoring.serviceMonitor=false --set monitoring.rules=false --set ingress.enabled=false \
+            --wait --timeout 4m
+          kubectl get pods,svc,pvc,hpa -n library
+      - name: smoke test
+        env:
+          ADMIN_TOKEN: ${{ secrets.DEPLOY_API_KEY }}
+        run: |
+          kubectl port-forward -n library svc/library-api 8080:80 &
+          sleep 5
+          curl -sf http://localhost:8080/health; echo
+          curl -sf -X POST http://localhost:8080/books -H "X-Admin-Token: $ADMIN_TOKEN" -H 'content-type: application/json' -d '{"title":"Deployed by CI","author":"GitHub Actions"}'; echo
+          curl -sf http://localhost:8080/books | head -c 400; echo
+          curl -sf http://localhost:8080/metrics | grep library_requests_total | head -3

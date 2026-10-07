@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: library-api
+  namespace: library
+  labels: {app: library-api}
+spec:
+  selector: {app: library-api}
+  ports: [{name: http, port: 80, targetPort: http}]

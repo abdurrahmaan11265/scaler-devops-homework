@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lib.name" . }}
+  labels: {{- include "lib.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ include "lib.name" . }}
+  ports: [{name: http, port: 80, targetPort: http}]

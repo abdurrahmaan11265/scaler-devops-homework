@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: library-api-config
+  namespace: library
+data:
+  LIBRARY_NAME: "Campus Central Library"
+  LOAN_DAYS: "21"
+  DATA_DIR: /data

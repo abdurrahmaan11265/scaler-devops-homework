@@ -1,0 +1,24 @@
+# Argo CD deploys the Helm chart from this repository and keeps it in sync.
+# The admin token is not in git; it is set as a Helm parameter on the
+# Application, which Argo CD stores in the cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: library-api
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/abdurrahmaan11265/scaler-devops-homework.git
+    targetRevision: main
+    path: task-20-final-devops-project/final-devops-project/helm/library-api
+    helm:
+      parameters:
+        - name: image.tag
+          value: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: library
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]

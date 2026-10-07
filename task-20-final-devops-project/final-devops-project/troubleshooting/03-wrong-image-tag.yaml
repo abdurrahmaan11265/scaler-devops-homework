@@ -1,0 +1,11 @@
+# Break 3: an image tag that was never pushed.
+# Expect ImagePullBackOff on the new pods, old pods keep serving. Fix: a real tag.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: library-api, namespace: library}
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/abdurrahmaan11265/library-api:v9.9.9

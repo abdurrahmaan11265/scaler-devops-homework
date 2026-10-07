@@ -1,0 +1,3 @@
+{{ .Release.Name }} is deployed.
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "lib.name" . }} 8080:80
+  curl http://localhost:8080/books

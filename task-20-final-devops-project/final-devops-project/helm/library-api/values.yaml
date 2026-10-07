@@ -1,0 +1,26 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/abdurrahmaan11265/library-api
+  tag: latest
+  pullPolicy: Always
+config:
+  libraryName: "Campus Central Library"
+  loanDays: "21"
+secret:
+  adminToken: "set-with---set-secret.adminToken"   # never put the real one in git
+storage:
+  size: 200Mi
+ingress:
+  enabled: true
+  host: library.local
+hpa:
+  enabled: true
+  min: 2
+  max: 5
+  cpu: 60
+monitoring:
+  serviceMonitor: true
+  rules: true
+resources:
+  requests: {cpu: 100m, memory: 64Mi}
+  limits: {cpu: 300m, memory: 128Mi}

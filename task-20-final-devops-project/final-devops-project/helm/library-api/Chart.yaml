@@ -1,0 +1,6 @@
+apiVersion: v2
+name: library-api
+description: The library API with its config, secret, storage, ingress, autoscaler and monitoring
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

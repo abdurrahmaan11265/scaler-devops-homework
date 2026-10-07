@@ -1,0 +1,22 @@
+---
+# Source: library-api/templates/servicemonitor.yaml
+# Tells the Prometheus operator to scrape /metrics from every pod behind the service.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: library-api
+  labels:
+    release: monitoring
+    app: library-api
+    app.kubernetes.io/name: library-api
+    app.kubernetes.io/instance: library-api
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  selector:
+    matchLabels:
+      app: library-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+

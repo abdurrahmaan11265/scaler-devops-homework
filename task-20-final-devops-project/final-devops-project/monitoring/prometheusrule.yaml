@@ -1,0 +1,35 @@
+---
+# Source: library-api/templates/prometheusrule.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: library-api
+  labels:
+    release: monitoring
+    app: library-api
+    app.kubernetes.io/name: library-api
+    app.kubernetes.io/instance: library-api
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  groups:
+    - name: library-api.rules
+      rules:
+        - alert: LibraryApiDown
+          expr: kube_deployment_status_replicas_available{deployment="library-api"} < 2
+          for: 2m
+          labels: {severity: critical}
+          annotations: {summary: fewer than the minimum library-api replicas are available}
+        - alert: LibraryApiErrorRate
+          expr: sum(rate(library_requests_total{status=~"5.."}[5m])) / sum(rate(library_requests_total[5m])) > 0.05
+          for: 2m
+          labels: {severity: warning}
+          annotations: {summary: more than 5% of library-api requests are failing}
+        - alert: LibraryApiHighCpu
+          expr: |
+            sum(rate(container_cpu_usage_seconds_total{container="api", pod=~"library-api-.*"}[2m]))
+              / sum(kube_pod_container_resource_requests{container="api", pod=~"library-api-.*", resource="cpu"}) > 0.8
+          for: 1m
+          labels: {severity: warning}
+          annotations: {summary: library-api is above 80% of its CPU request}
+
+

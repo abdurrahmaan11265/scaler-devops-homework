@@ -1,0 +1,18 @@
+{{- if .Values.monitoring.serviceMonitor }}
+# Tells the Prometheus operator to scrape /metrics from every pod behind the service.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "lib.name" . }}
+  labels:
+    release: monitoring
+    {{- include "lib.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "lib.name" . }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+{{- end }}

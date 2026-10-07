@@ -1,0 +1,8 @@
+# SAST rules. The registry rulesets do the heavy lifting; this file adds one
+# project rule so the scan is not a black box.
+rules:
+  - id: no-debug-server
+    languages: [python]
+    severity: ERROR
+    message: Do not start the Flask debug server in application code
+    pattern: $APP.run(..., debug=True, ...)
