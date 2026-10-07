@@ -1,0 +1,11 @@
+17:12:11  cpu-worker   Deployment/cpu-worker   cpu: 77%/40%   1     6     6     16m
+17:12:41  cpu-worker   Deployment/cpu-worker   cpu: 77%/40%   1     6     6     17m
+17:13:11  cpu-worker   Deployment/cpu-worker   cpu: 71%/40%   1     6     6     17m
+17:13:41  cpu-worker   Deployment/cpu-worker   cpu: 71%/40%   1     6     6     18m
+17:14:11  cpu-worker   Deployment/cpu-worker   cpu: 9%/40%   1     6     6     18m
+17:14:41  cpu-worker   Deployment/cpu-worker   cpu: 9%/40%   1     6     6     19m
+17:15:11  cpu-worker   Deployment/cpu-worker   cpu: 1%/40%   1     6     6     19m
+17:15:42  cpu-worker   Deployment/cpu-worker   cpu: 1%/40%   1     6     6     20m
+17:16:12  cpu-worker   Deployment/cpu-worker   cpu: 1%/40%   1     6     6     20m
+17:16:42  cpu-worker   Deployment/cpu-worker   cpu: 1%/40%   1     6     6     21m
+17:17:12  cpu-worker   Deployment/cpu-worker   cpu: 1%/40%   1     6     6     21m

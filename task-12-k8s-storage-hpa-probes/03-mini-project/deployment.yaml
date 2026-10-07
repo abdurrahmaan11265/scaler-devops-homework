@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: library-web
+  namespace: library-prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: library-web
+  template:
+    metadata:
+      labels:
+        app: library-web
+    spec:
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: library-data
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          startupProbe:                 # give the container up to 30s to come up
+            httpGet:
+              path: /
+              port: 80
+            failureThreshold: 6
+            periodSeconds: 5
+          readinessProbe:               # pull the pod out of the service if it fails
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 5
+          livenessProbe:                # restart the container if it fails
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 15

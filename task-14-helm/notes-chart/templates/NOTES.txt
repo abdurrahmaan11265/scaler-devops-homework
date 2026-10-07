@@ -1,0 +1,5 @@
+{{ .Values.app.name }} is installed as release {{ .Release.Name }} ({{ .Values.app.environment }}).
+
+Reach it with:
+  kubectl port-forward svc/{{ include "notes.fullname" . }} 8080:{{ .Values.service.port }}
+  curl http://localhost:8080

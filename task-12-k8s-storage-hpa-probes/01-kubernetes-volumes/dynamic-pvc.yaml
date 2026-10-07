@@ -1,0 +1,13 @@
+# Dynamic provisioning: no PersistentVolume is written by anyone. The claim
+# names a StorageClass and the provisioner behind it creates the volume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-claim
+spec:
+  storageClassName: standard       # minikube's default class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi

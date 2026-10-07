@@ -1,0 +1,36 @@
+# Alerts. Prometheus evaluates these every 30s; a firing one shows in the
+# Alerts page and is sent to Alertmanager. The CPU one is tuned to fire under
+# the load generator so it can actually be seen firing.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: library-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring          # the operator only picks up rules with this label
+spec:
+  groups:
+    - name: library.rules
+      rules:
+        - alert: CatalogHighCpu
+          expr: |
+            sum(rate(container_cpu_usage_seconds_total{namespace="library", container="web"}[2m]))
+              / sum(kube_pod_container_resource_requests{namespace="library", container="web", resource="cpu"}) > 0.8
+          for: 1m
+          labels: {severity: warning}
+          annotations:
+            summary: catalog-web is using more than 80% of its CPU request
+        - alert: CatalogPodNotReady
+          expr: kube_deployment_status_replicas_available{namespace="library", deployment="catalog-web"} < 2
+          for: 2m
+          labels: {severity: critical}
+          annotations:
+            summary: fewer than 2 catalog-web replicas are available
+        - alert: CatalogHighMemory
+          expr: |
+            sum(container_memory_working_set_bytes{namespace="library", container="web"})
+              / sum(kube_pod_container_resource_limits{namespace="library", container="web", resource="memory"}) > 0.9
+          for: 2m
+          labels: {severity: warning}
+          annotations:
+            summary: catalog-web is close to its memory limit

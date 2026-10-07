@@ -1,0 +1,26 @@
+# The service selector does not match the pod labels, so the service has no
+# endpoints and every request to it hangs.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: catalog}
+  template:
+    metadata:
+      labels: {app: catalog}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports: [{containerPort: 80}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+spec:
+  selector: {app: catalogue}
+  ports: [{port: 80, targetPort: 80}]

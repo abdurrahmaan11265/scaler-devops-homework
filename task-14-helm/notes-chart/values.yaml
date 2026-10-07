@@ -1,0 +1,25 @@
+# Defaults. Everything a template reads comes from here, and any value can be
+# overridden with --set or another values file at install or upgrade time.
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: "1.27.3-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+app:
+  name: notes
+  environment: development
+  motd: "Notes service, development build"
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi

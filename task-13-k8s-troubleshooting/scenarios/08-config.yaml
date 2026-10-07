@@ -1,0 +1,25 @@
+# The deployment reads a key from a secret, and the key name has a typo.
+# The pod never starts and the reason is one line in describe.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: catalog-db
+stringData:
+  DB_PASSWORD: example-only
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: catalog-worker
+  labels: {scenario: config}
+spec:
+  containers:
+    - name: worker
+      image: busybox:1.36
+      command: ["sh", "-c", "echo connected; sleep 3600"]
+      env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: catalog-db
+              key: DB_PASSWRD

@@ -1,0 +1,11 @@
+# The image tag has a typo, so the pull fails. ErrImagePull is the first
+# attempt, ImagePullBackOff is the waiting state between retries.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: reports
+  labels: {scenario: imagepull}
+spec:
+  containers:
+    - name: reports
+      image: nginx:1.27-alpnie

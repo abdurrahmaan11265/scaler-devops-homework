@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: library-web
+  namespace: troubleshoot
+spec:
+  selector:
+    app: library-web
+  ports:
+    - port: 80
+      targetPort: 8080

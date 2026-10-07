@@ -1,0 +1,12 @@
+# The container starts, prints an error and exits 1, so the kubelet restarts it
+# with a growing back off. Fix: the command should not exit.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: importer
+  labels: {scenario: crashloop}
+spec:
+  containers:
+    - name: importer
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'FATAL: CATALOG_DB_URL is not set'; exit 1"]

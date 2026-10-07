@@ -1,0 +1,11 @@
+# A NetworkPolicy that selects the catalog pods and allows ingress from nothing,
+# so the pods are healthy and the service has endpoints but nothing can reach them.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: catalog-deny-all
+spec:
+  podSelector:
+    matchLabels: {app: catalog}
+  policyTypes: [Ingress]
+  ingress: []

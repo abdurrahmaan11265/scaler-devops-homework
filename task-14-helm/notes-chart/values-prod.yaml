@@ -1,0 +1,12 @@
+# Only what differs from values.yaml. Helm merges this on top of the defaults.
+replicaCount: 3
+
+image:
+  tag: "1.27.5-alpine"
+
+service:
+  type: NodePort
+
+app:
+  environment: production
+  motd: "Notes service, production"

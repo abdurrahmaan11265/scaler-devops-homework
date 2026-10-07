@@ -1,0 +1,20 @@
+# hostPath: a directory from the node itself. Survives the pod, but ties the
+# pod to one node and lets it see the host filesystem, so it is rarely right
+# for applications. Fine for a single node minikube experiment.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-demo
+spec:
+  volumes:
+    - name: node-dir
+      hostPath:
+        path: /tmp/hostpath-demo
+        type: DirectoryOrCreate
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo written-by-$(hostname) > /data/marker.txt; sleep 3600"]
+      volumeMounts:
+        - name: node-dir
+          mountPath: /data
