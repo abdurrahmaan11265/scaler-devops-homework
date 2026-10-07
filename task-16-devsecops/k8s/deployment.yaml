@@ -14,6 +14,10 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000          # the uid created in the Dockerfile; runAsNonRoot needs a number
+      volumes:
+        - name: tmp
+          emptyDir: {}           # gunicorn writes heartbeat files to /tmp
       containers:
         - name: api
           image: ghcr.io/abdurrahmaan11265/lending-api:latest
@@ -25,6 +29,9 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           readinessProbe:
             httpGet:
               path: /health
