@@ -99,7 +99,7 @@ jobs:
       - name: scan the image tar, fail on fixable HIGH or CRITICAL
         run: |
           docker run --rm -v "$PWD:/work" -w /work aquasec/trivy:0.75.0 \
-            image --input lending-api.tar --config $APP_DIR/security/trivy.yaml --format table
+            image --input lending-api.tar --config $APP_DIR/security/trivy.yaml --ignore-unfixed --format table
 
   security-gate:
     name: security gate
