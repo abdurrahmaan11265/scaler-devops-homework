@@ -9,8 +9,8 @@ from pathlib import Path
 from flask import Flask, jsonify, request, Response
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
-REQUESTS = Counter("library_requests_total", "requests by endpoint and status", ["endpoint", "status"])
-LATENCY = Histogram("library_request_seconds", "request latency", ["endpoint"])
+REQUESTS = Counter("library_requests_total", "requests by route and status", ["route", "status"])
+LATENCY = Histogram("library_request_seconds", "request latency", ["route"])
 _lock = threading.Lock()
 
 
